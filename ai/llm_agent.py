@@ -22,18 +22,34 @@ User intent:
 Available actions:
 {actions_list}
 
+Rules:
+- post_ creates a new record. put_ updates an existing one.
+- If the intent says create, add, or new, include the post_ action. Do not use put_ to create.
+- Include later actions the intent also asks for, such as terminate.
+
 Example output:
-["post_employees", "get_employees"]
+["post_employees", "put_employees_emp_id_terminate"]
 """
 
         raw = self.llm_client.generate(prompt)
         cleaned = self._clean_output(raw)
 
         try:
-            return json.loads(cleaned)
+            parsed = json.loads(cleaned)
         except Exception:
             print("[ERROR] Failed to parse actions:", raw)
             return []
+
+        if isinstance(parsed, list):
+            return [a for a in parsed if isinstance(a, str)]
+
+        if isinstance(parsed, dict):
+            for value in parsed.values():
+                if isinstance(value, list):
+                    return [a for a in value if isinstance(a, str)]
+
+        print("[ERROR] Actions were not a list:", raw)
+        return []
 
     def resolve_path_params(self, path_params: dict, context: dict) -> dict:
         """

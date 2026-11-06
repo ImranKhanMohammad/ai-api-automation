@@ -23,9 +23,11 @@ class LLMClient:
             json={
                 "model": self.model,
                 "prompt": prompt,
-                "stream": False
+                "stream": False,
+                "format": "json",
+                "options": {"temperature": 0},
             },
-            timeout=60
+            timeout=120
         )
         response.raise_for_status()
         return response.json().get("response", "")

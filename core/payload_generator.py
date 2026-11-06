@@ -1,5 +1,6 @@
 import re
 import json
+from datetime import date, timedelta
 
 from client.api_client import call_api
 from ai.llm_client import LLMClient
@@ -86,6 +87,29 @@ def _type_fallback(schema: dict) -> dict:
     return payload
 
 
+def _parse_json_object(raw: str) -> dict | None:
+    if not raw:
+        return None
+
+    text = raw.strip()
+    if "```" in text:
+        text = re.sub(r"```(?:json)?", "", text).replace("```", "").strip()
+
+    start = text.find("{")
+    if start == -1:
+        return None
+
+    end = text.rfind("}")
+    candidate = text[start:end + 1] if end > start else text[start:] + "}"
+
+    try:
+        value = json.loads(candidate)
+    except json.JSONDecodeError:
+        return None
+
+    return value if isinstance(value, dict) else None
+
+
 def _ask_llm(schema: dict, sample_data: dict) -> dict | None:
     """
     Ask LLM to generate a valid payload using schema + real system data.
@@ -103,21 +127,19 @@ Real data already in the system (use as reference for realistic values):
 Rules:
 - Return ONLY a valid JSON object
 - No explanation, no markdown, no extra text
-- Values must be realistic based on the sample data
+- Include only fields from the request schema
 - Do not copy the id field
+- Do not reuse name values already present in the sample data
+- Today is {date.today().isoformat()}. A future date must be after today, formatted YYYY-MM-DD. Use {(date.today() + timedelta(days=30)).isoformat()} when the intent needs a future date.
 """
     client = LLMClient()
     raw = client.generate(prompt)
 
-    cleaned = raw.strip()
-    if "```" in cleaned:
-        cleaned = re.sub(r"```(?:json)?", "", cleaned).replace("```", "").strip()
-
-    try:
-        return json.loads(cleaned)
-    except Exception:
+    parsed = _parse_json_object(raw)
+    if parsed is None:
         print(f"[WARN] LLM payload parse failed: {raw}")
         return None
+    return parsed
 
 
 def generate_payload(action_name: str, api: dict, api_store: dict) -> dict:
