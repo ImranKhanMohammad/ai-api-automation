@@ -70,4 +70,8 @@ Python, Ollama (`llama3.2`), requests, FastAPI, Pydantic.
 
 ## Status
 
-V1 on `main`: OpenAPI to JSON stores, local LLM chooses actions, executor fills bodies and path parameters, then performs the HTTP calls. See `examples/sample-run.txt` for one passing run against fastapi-hr-service. There is no CI yet.
+V1 on `main`: OpenAPI to JSON stores, local LLM chooses actions, executor fills bodies and path parameters, then performs the HTTP calls. See `examples/sample-run.txt` for one passing run against fastapi-hr-service. There is no CI yet. The store builder is checked without a model:
+
+```powershell
+python -m unittest tests.test_actions_store
+```
