@@ -9,11 +9,10 @@ The sample target is [fastapi-hr-service](https://github.com/ImranKhanMohammad/f
 1. Load `SWAGGER_URL` and write API, action, and GET-response stores under `input/`.
 2. Read `input/nl.txt`.
 3. Ask Ollama to pick action names from the store.
-4. Call each chosen endpoint in order and print the HTTP result.
+4. Build each request body from the OpenAPI schema plus a real GET sample, and resolve path parameters from earlier responses.
+5. Call each chosen endpoint in order and print the HTTP result.
 
 Stores are data. The executor does not change when the API spec changes; re-run the builder.
-
-Request bodies and path parameters are not filled from the sentence on `main` yet. A step runs with whatever `input` it was given, and `main.py` currently passes action names only. Expect create and terminate calls to fail until that wiring lands.
 
 ## Quick start
 
@@ -53,18 +52,7 @@ SWAGGER_URL=http://127.0.0.1:8000/openapi.json
 
 `input/` is local output and is not committed. The HR spec exposes these action names, among others: `post_employees`, `put_employees_emp_id_terminate`.
 
-A run prints three sections:
-
-```
-[INTENT]
-create a new employee and terminate them for a future date
-
-[ACTIONS]
-...action names the model chose...
-
-[RESULT]
-...context saved from each HTTP response...
-```
+One captured run is in [examples/sample-run.txt](examples/sample-run.txt). The model chose `post_employees` then `put_employees_emp_id_terminate`. Both calls returned HTTP 200: employee Kamran was created, then terminated with `effective_date` 2026-12-06. A later run can choose different names and dates. The model is llama3.2 at temperature 0.
 
 ## Layout
 
@@ -82,4 +70,4 @@ Python, Ollama (`llama3.2`), requests, FastAPI, Pydantic.
 
 ## Status
 
-V1 on `main`: OpenAPI to JSON stores, local LLM chooses actions, executor performs the HTTP calls. Body and path-parameter generation from the intent is not in this branch.
+V1 on `main`: OpenAPI to JSON stores, local LLM chooses actions, executor fills bodies and path parameters, then performs the HTTP calls. See `examples/sample-run.txt` for one passing run against fastapi-hr-service. There is no CI yet.
